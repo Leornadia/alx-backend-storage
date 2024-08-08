@@ -1,6 +1,9 @@
 SELECT 
     band_name, 
-    IFNULL((2022 - formed), 0) AS lifespan
+    IFNULL(
+        IF(split IS NOT NULL, split - formed, 2022 - formed),
+        0
+    ) AS lifespan
 FROM 
     metal_bands
 WHERE 
