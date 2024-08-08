@@ -1,4 +1,4 @@
--- Initial setup
+-- Initial
 DROP TABLE IF EXISTS numbers;
 
 CREATE TABLE IF NOT EXISTS numbers (
@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS numbers (
     b int default 0
 );
 
--- Insert sample data
 INSERT INTO numbers (a, b) VALUES (10, 2);
 INSERT INTO numbers (a, b) VALUES (4, 5);
 INSERT INTO numbers (a, b) VALUES (2, 3);

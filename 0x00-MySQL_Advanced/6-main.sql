@@ -1,4 +1,4 @@
--- 6-main.sql
+Enter password: 
 -- Show and add bonus correction
 SELECT * FROM projects;
 SELECT * FROM corrections;
@@ -16,4 +16,3 @@ SELECT "--";
 
 SELECT * FROM projects;
 SELECT * FROM corrections;
-
