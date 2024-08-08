@@ -1,7 +1,10 @@
 SELECT 
     band_name, 
     IFNULL(
-        IF(split IS NOT NULL, split - formed, 2022 - formed),
+        CASE 
+            WHEN split IS NOT NULL THEN split - formed 
+            ELSE 2022 - formed 
+        END, 
         0
     ) AS lifespan
 FROM 
@@ -9,5 +12,5 @@ FROM
 WHERE 
     style = 'Glam rock'
 ORDER BY 
-    lifespan DESC;
+    lifespan DESC, band_name;
 
