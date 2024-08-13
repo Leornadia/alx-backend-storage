@@ -1,44 +1,47 @@
 #!/usr/bin/env python3
-"""
-Improved script that provides stats about Nginx logs stored in MongoDB
-"""
+"""This script connects to MongoDB and retrieves log statistics."""
 
+import pymongo
 from pymongo import MongoClient
+from collections import Counter
 
+def connect_to_mongo():
+    """Connect to MongoDB and return the client."""
+    client = MongoClient("mongodb://localhost:27017/")
+    return client
 
-def log_stats():
-    """
-    Provides stats about Nginx logs stored in MongoDB
-    """
-    client = MongoClient('mongodb://127.0.0.1:27017')
-    logs_collection = client.logs.nginx
-
-    # Total logs
-    total_logs = logs_collection.count_documents({})
+def get_log_stats(collection):
+    """Retrieve log statistics from the specified collection."""
+    total_logs = collection.count_documents({})
     print(f"{total_logs} logs")
 
-    # Methods stats
-    methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    # Count HTTP methods
+    methods = Counter()
+    status_codes = Counter()
+    ip_addresses = Counter()
+
+    for log in collection.find():
+        methods[log.get("method", "UNKNOWN")] += 1
+        status_codes[log.get("status", "UNKNOWN")] += 1
+        ip_addresses[log.get("ip", "UNKNOWN")] += 1
+
+    # Print methods
     print("Methods:")
-    for method in methods:
-        count = logs_collection.count_documents({"method": method})
-        print(f"    method {method}: {count}")
+    for method, count in methods.items():
+        print(f"\tmethod {method}: {count}")
 
-    # Status check
-    status_check = logs_collection.count_documents({"method": "GET", "path": "/status"})
-    print(f"{status_check} status check")
-
-    # Top 10 IPs
+    # Print status codes
+    print(f"{sum(status_codes.values())} status check")
     print("IPs:")
-    pipeline = [
-        {"$group": {"_id": "$ip", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-        {"$limit": 10}
-    ]
-    top_ips = logs_collection.aggregate(pipeline)
-    for ip in top_ips:
-        print(f"    {ip['_id']}: {ip['count']}")
-
+    
+    # Get the top 10 IPs
+    top_ips = ip_addresses.most_common(10)
+    for ip, count in top_ips:
+        print(f"\t{ip}: {count}")
 
 if __name__ == "__main__":
-    log_stats()
+    client = connect_to_mongo()
+    db = client.logs
+    collection = db.nginx
+    get_log_stats(collection)
+
