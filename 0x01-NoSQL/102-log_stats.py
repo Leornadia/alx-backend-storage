@@ -2,14 +2,11 @@
 """
 Improved script that provides stats about Nginx logs stored in MongoDB
 """
-
 from pymongo import MongoClient
 
 
 def log_stats():
-    """
-    Provides stats about Nginx logs stored in MongoDB
-    """
+    """Provides stats about Nginx logs stored in MongoDB"""
     client = MongoClient('mongodb://127.0.0.1:27017')
     logs_collection = client.logs.nginx
 
