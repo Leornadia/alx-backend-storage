@@ -1,30 +1,13 @@
 #!/usr/bin/env python3
-"""
-This script demonstrates how to use the RedisClient and replay modules.
-"""
+""" Main file """
 
-from redis_client import RedisClient
-from replay import replay
-from cache import Cache # Assuming you have a 'cache.py' file with the Cache class
+from exercise import Cache, replay
 
-def main():
-    """
-    Main function to demonstrate the use of RedisClient and replay.
-    """
-    # Initialize a RedisClient
-    client = RedisClient()
+cache = Cache()
 
-    # Create a Cache instance
-    cache = Cache()
+cache.store("foo")
+cache.store("bar")
+cache.store(42)
 
-    # Use the cache
-    cache.store("foo")
-    cache.store("bar")
-    cache.store(42)
+replay(cache.store)
 
-    # Replay the history of calls to cache.store
-    replay(cache.store)
-
-
-if __name__ == "__main__":
-    main()
