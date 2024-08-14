@@ -1,12 +1,14 @@
+exercise.py
 #!/usr/bin/env python3
 """
-A module implementing a Cache class with Redis and a replay function.
+Redis Basics - Exercise Module
 """
 
 import redis
 import uuid
 from typing import Union, Callable
 from functools import wraps
+
 
 def count_calls(method: Callable) -> Callable:
     """Decorator to count the number of calls to a method."""
@@ -19,6 +21,7 @@ def count_calls(method: Callable) -> Callable:
         return method(self, *args, **kwargs)
 
     return wrapper
+
 
 def call_history(method: Callable) -> Callable:
     """Decorator to store the history of inputs and outputs for a function."""
@@ -40,6 +43,7 @@ def call_history(method: Callable) -> Callable:
         return output
     
     return wrapper
+
 
 class Cache:
     """A class for interacting with Redis cache."""
@@ -83,11 +87,12 @@ class Cache:
 
     def get_str(self, key: str) -> str:
         """Retrieve a string from Redis."""
-        return self.get(key, fn=lambda d: d.decode("utf-8"))
+        return self.get(key, fn=lambda d: d.decode("utf-8") if d else None)
 
     def get_int(self, key: str) -> int:
         """Retrieve an integer from Redis."""
         return self.get(key, fn=int)
+
 
 def replay(method: Callable):
     """
@@ -96,7 +101,7 @@ def replay(method: Callable):
     Args:
         method: The method to replay.
     """
-    redis_instance = redis.Redis()
+    redis_instance = method.__self__._redis
     method_name = method.__qualname__
     inputs_key = f"{method_name}:inputs"
     outputs_key = f"{method_name}:outputs"
@@ -112,7 +117,8 @@ def replay(method: Callable):
         output_str = output.decode('utf-8')
         print(f"{method_name}{input_str} -> {output_str}")
 
-# Example usage
+
+# For testing purposes
 if __name__ == "__main__":
     cache = Cache()
     cache.store("foo")
