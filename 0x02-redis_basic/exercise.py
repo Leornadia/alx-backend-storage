@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-import redis
-import uuid
-from functools import wraps
-from typing import Union, Callable, Optional
+import redis  # Import the Redis client library
+import uuid  # Import uuid for generating random keys
+from functools import wraps  # Import wraps for preserving metadata in decorators
+from typing import Union, Callable, Optional  # Import type hints
 
 def call_history(method: Callable) -> Callable:
     """
     Decorator to store the history of inputs and outputs for a particular function.
+    Stores inputs and outputs in Redis using lists.
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        # Store inputs
+        # Store the function's input arguments in a Redis list
         self._redis.rpush(f"{method.__qualname__}:inputs", str(args))
         
-        # Execute the function and store the output
+        # Execute the original function and store its output in a Redis list
         output = method(self, *args, **kwargs)
         self._redis.rpush(f"{method.__qualname__}:outputs", str(output))
         
+        # Return the function's output
         return output
 
     return wrapper
@@ -24,10 +26,11 @@ def call_history(method: Callable) -> Callable:
 def count_calls(method: Callable) -> Callable:
     """
     Decorator that counts how many times a function is called.
+    Stores the count in Redis using the INCR command.
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        # Increment the counter each time the method is called
+        # Increment the call count for this function in Redis
         self._redis.incr(method.__qualname__)
         return method(self, *args, **kwargs)
 
@@ -35,46 +38,54 @@ def count_calls(method: Callable) -> Callable:
 
 class Cache:
     """Cache class for storing and retrieving data in Redis."""
+    
     def __init__(self):
         """Initialize the Cache with a Redis client and flush any existing data."""
-        self._redis = redis.Redis()
-        self._redis.flushdb()
+        self._redis = redis.Redis()  # Create a Redis client instance
+        self._redis.flushdb()  # Clear any existing data in Redis
 
-    @call_history
-    @count_calls
+    @call_history  # Apply the call_history decorator
+    @count_calls  # Apply the count_calls decorator
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Store data in Redis using a generated key.
+        Generates a unique key for the data and stores it in Redis.
         """
-        key = str(uuid.uuid4())
-        self._redis.set(key, data)
-        return key
+        key = str(uuid.uuid4())  # Generate a unique key
+        self._redis.set(key, data)  # Store the data in Redis with the generated key
+        return key  # Return the generated key
 
     def get(self, key: str, fn: Optional[Callable] = None) -> Union[str, bytes, int, float]:
         """
         Retrieve data from Redis and optionally apply a conversion function.
+        If a conversion function is provided, it is applied to the retrieved data.
         """
-        data = self._redis.get(key)
+        data = self._redis.get(key)  # Retrieve the data from Redis
         if fn:
-            return fn(data)
-        return data
+            return fn(data)  # Apply the conversion function if provided
+        return data  # Return the raw data if no conversion function is provided
 
     def get_str(self, key: str) -> str:
-        """Retrieve a string from Redis."""
+        """
+        Retrieve a string from Redis.
+        Automatically decodes the retrieved data as UTF-8.
+        """
         return self.get(key, fn=lambda x: x.decode('utf-8'))
 
     def get_int(self, key: str) -> int:
-        """Retrieve an integer from Redis."""
+        """
+        Retrieve an integer from Redis.
+        Automatically converts the retrieved data to an integer.
+        """
         return self.get(key, fn=int)
 
 def replay(method: Callable) -> None:
     """
-    Displays the history of calls of a particular function.
-
-    :param method: The method whose history to display.
+    Display the history of calls of a particular function.
+    Shows how many times the function was called, along with the inputs and outputs.
     """
-    redis_instance = method.__self__._redis
-    method_name = method.__qualname__
+    redis_instance = method.__self__._redis  # Access the Redis instance from the method
+    method_name = method.__qualname__  # Get the qualified name of the method
 
     # Keys for inputs and outputs in Redis
     inputs_key = f"{method_name}:inputs"
